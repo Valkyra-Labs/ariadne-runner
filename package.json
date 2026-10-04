@@ -1,0 +1,43 @@
+{
+  "name": "ariadne-runner",
+  "version": "0.1.0",
+  "description": "Deterministic engine of a stoppable agent run: seeded plan, consent rule, confirmations, undo windows, a run replayed step by step and streamed as server-sent events from a Service Worker",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/Valkyra-Labs/ariadne-runner",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sse": {
+      "types": "./dist/sse.d.ts",
+      "import": "./dist/sse.js"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "xstate": "5.32.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.0"
+  }
+}

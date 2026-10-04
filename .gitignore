@@ -1,0 +1,9 @@
+node_modules
+dist
+*.tsbuildinfo
+.DS_Store
+/docs/inside/
+# Local agent instructions and settings; never committed.
+CLAUDE.md
+AGENTS.md
+.claude/
