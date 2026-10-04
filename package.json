@@ -30,7 +30,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "pnpm build && node scripts/bench.mjs"
   },
   "dependencies": {
     "xstate": "5.32.6"
