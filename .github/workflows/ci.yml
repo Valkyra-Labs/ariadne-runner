@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: typecheck, test, build
@@ -21,6 +24,66 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
+      # Kept for the tests badge; bash fails the step through the pipe when
+      # a test fails.
+      - name: pnpm test
+        shell: bash
+        run: pnpm test 2>&1 | tee "$RUNNER_TEMP/tests.log"
       - run: pnpm build
       - run: ls -l dist
+      # Every run builds the badges, so a value that can no longer be read
+      # fails here, on the pull request; only main publishes them.
+      - name: Badge values
+        run: node scripts/badges.mjs --out "$RUNNER_TEMP/badges" --tests "$RUNNER_TEMP/tests.log"
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: badges
+          path: ${{ runner.temp }}/badges
+          if-no-files-found: error
+          retention-days: 7
+
+  # Commits the badge JSON to the orphan branch `badges`, which the README's
+  # img.shields.io/endpoint badges read. Only after a green run on main.
+  publish-badges:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-badges
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: badges
+          path: ${{ runner.temp }}/badges
+      - name: Commit to the badges branch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="$RUNNER_TEMP/badges-branch"
+          status=0
+          git ls-remote --exit-code origin refs/heads/badges > /dev/null || status=$?
+          if [ "$status" -eq 0 ]; then
+            git fetch --depth=1 origin badges
+            git worktree add -B badges "$branch" FETCH_HEAD
+          elif [ "$status" -eq 2 ]; then
+            git worktree add --detach "$branch"
+            git -C "$branch" switch --orphan badges
+          else
+            exit "$status"
+          fi
+          find "$branch" -maxdepth 1 -name '*.json' -delete
+          cp "$RUNNER_TEMP"/badges/*.json "$branch"/
+          cd "$branch"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The badges are unchanged."
+            exit 0
+          fi
+          git commit -q -m "Badges measured on ${GITHUB_SHA}"
+          git push origin HEAD:refs/heads/badges
