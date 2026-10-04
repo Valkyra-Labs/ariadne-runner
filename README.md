@@ -1,5 +1,12 @@
 # ariadne-runner
 
+[![CI](https://github.com/Valkyra-Labs/ariadne-runner/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Valkyra-Labs/ariadne-runner/actions/workflows/ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![Tests](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Valkyra-Labs/ariadne-runner/badges/tests.json)](https://github.com/Valkyra-Labs/ariadne-runner/actions/workflows/ci.yml)
+
+The tests badge is published by CI from each green run on `main`: tests
+passed in `pnpm test` (Vitest, `test/`) on Linux, Node 22.
+
 The deterministic engine of an agent run that a person can stop, in
 TypeScript.
 
