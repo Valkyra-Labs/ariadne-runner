@@ -3,7 +3,9 @@ import {
   decodeDecisions,
   decodePlanPayload,
   encodeDecisions,
+  encodeFrame,
   encodePlanPayload,
+  encodeWaitingFrame,
   generateScenario,
   parseStreamOptions,
   resolvePlan,
@@ -255,7 +257,13 @@ describe("protocol helpers", () => {
     expect(params.toString().length).toBeLessThan(1024);
   });
 
-  it("parses the stream options", () => {
+  it("formats the frames and parses the stream options", () => {
+    expect(encodeFrame(3, { type: "plan.finished", at: 1 })).toBe(
+      'id: 3\nevent: plan.finished\ndata: {"type":"plan.finished","at":1}\n\n',
+    );
+    expect(encodeWaitingFrame({ stepId: "s3", accepts: ["confirm", "skip"] })).toBe(
+      'event: stream.waiting\ndata: {"stepId":"s3","accepts":["confirm","skip"]}\n\n',
+    );
     expect(parseStreamOptions(new URLSearchParams("speed=fast&drop=1&undoWindow=2"))).toEqual({
       speed: "fast",
       drop: true,
