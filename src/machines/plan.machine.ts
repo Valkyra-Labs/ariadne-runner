@@ -4,8 +4,10 @@
   In "draft" the user edits the step list. "approved" spawns one step actor per
   step and waits for the stream to report plan.started. In "running" run
   events are routed to the step actors, user decisions are forwarded to them
-  and everything is appended to the exportable log. Undo stays available in
-  finished and stopped, because the undo window outlives the run.
+  and everything is appended to the exportable log. When the run stops, the
+  steps it never reached are skipped with the stop as their reason. Undo
+  stays available in finished and stopped, because the undo window outlives
+  the run.
 
   The log is structured: each entry is a code with its parameters, never a
   sentence, so the application renders it in the reader's language.
@@ -187,8 +189,18 @@ export const planMachine = setup({
       }
       if (ev.type === "plan.started") enqueue.assign({ startedAt: event.at });
       if (ev.type === "plan.finished") enqueue.assign({ finishedAt: event.at });
-      if (ev.type === "plan.stopped")
+      if (ev.type === "plan.stopped") {
         enqueue.assign({ finishedAt: event.at, stoppedAfter: ev.afterStepId });
+        /* A step the run never reached will not run now: it is skipped
+           because the run was stopped, as the step that waited at a
+           decision is. The stream sends no event for these, so the log
+           does not record one either. */
+        for (const id of context.order) {
+          const ref = context.stepRefs[id];
+          if (ref?.getSnapshot().matches("waiting"))
+            enqueue.sendTo(ref, { type: "SKIPPED", reason: "stopped_by_user", at: event.at });
+        }
+      }
     }),
     routeDecision: enqueueActions(({ context, event, enqueue }) => {
       if (event.type !== "DECIDE") return;

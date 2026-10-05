@@ -172,6 +172,37 @@ describe("plan machine: execution", () => {
     expect(actor.getSnapshot().context.stoppedAfter).toBe(step.id);
   });
 
+  it("once the run has stopped, no step still reads as waiting to run", () => {
+    const { actor } = boot();
+    const plan = generatePlan(7);
+    actor.send({ type: "APPROVE", sessionId: "sess", at: 100 });
+    server(actor, { type: "plan.started", at: 100, total: 12 }, 110);
+    const first = plan[0]!;
+    server(
+      actor,
+      { type: "step.started", stepId: first.id, at: 120, requiresConfirmation: false },
+      120,
+    );
+    actor.send({ type: "STOP", at: 130 });
+    server(
+      actor,
+      { type: "step.finished", stepId: first.id, at: 140, result: resultFor(first) },
+      140,
+    );
+    const logged = actor.getSnapshot().context.log.length;
+    server(actor, { type: "plan.stopped", at: 160, afterStepId: first.id }, 160);
+
+    const steps = actor.getSnapshot().context.stepRefs;
+    expect(stepStatusOf(steps[first.id]!.getSnapshot().value)).toBe("done");
+    for (const step of plan.slice(1)) {
+      const snapshot = steps[step.id]!.getSnapshot();
+      expect(stepStatusOf(snapshot.value)).toBe("skipped");
+      expect(snapshot.context.skipReason).toBe("stopped_by_user");
+    }
+    /* The log holds what the stream sent, and nothing the page inferred */
+    expect(actor.getSnapshot().context.log).toHaveLength(logged + 1);
+  });
+
   it("decisions are forwarded and counted; undo respects the window", () => {
     const { actor, clock } = boot();
     const plan = generatePlan(7);
