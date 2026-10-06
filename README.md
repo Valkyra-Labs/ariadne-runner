@@ -29,7 +29,7 @@ if any string with a letter in it that is not a known code reaches an
 event, a plan, the session log or the stream.
 
 Status: early. One scripted scenario, behaviour ported from an earlier
-server-side version with its tests (86 tests). Measured in Node on an
+server-side version with its tests (87 tests). Measured in Node on an
 Apple M4 Pro: a plan generates in about 1 us, a complete run replays
 in about 9 us, and the Service Worker handler encodes a complete run as
 an event stream in about 0.1 ms; method and stamps in
@@ -60,8 +60,9 @@ yet.
   without its own confirmation.
 - **Machines.** `planMachine` and `stepMachine` (XState 5) are the
   page's side: draft editing, one actor per step, decisions, stop after
-  the current step, and undo windows that outlive the run (`undoable`,
-  `permanent`, `irreversible`).
+  the current step (the steps the run never reached are then skipped
+  with `stopped_by_user`, so none reads as still waiting), and undo
+  windows that outlive the run (`undoable`, `permanent`, `irreversible`).
 
 ## Event model
 
